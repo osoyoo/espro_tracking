@@ -3,8 +3,8 @@
  *| |_| |___ | |_| | |_| | |_| | |_| ( (__| |_| | | | |
  * \___/(___/ \___/ \__  |\___/ \___(_)____)___/|_|_|_|
  *                  (____/ 
- * Arduino Smart Car Tutorial Lesson 1
- * Tutorial URL https://osoyoo.com/?p=11370
+ * OSOYOO Espro All-In-One Board   Line Tracking Project
+ * Tutorial URL https://osoyoo.com/?p=61226
  * CopyRight www.osoyoo.com
 
  * After running the code, smart car will go forward 2 seconds, then go backward 2
