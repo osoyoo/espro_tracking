@@ -28,48 +28,50 @@
 
 // Speed settings for tracking
 // Reduced speeds for low-capacity 9V battery to prevent brownout
-#define TRACK_SPEED     220    // Normal tracking speed (reduced from 80)
-#define TURN_SPEED     180    // Turn speed (reduced from 100)
-#define SLOW_SPEED     100    // Slow speed for gentle corrections (reduced from 60)
+#define TRACK_SPEED     180    // Normal tracking speed (reduced from 80)
+#define TURN_SPEED     120    // Turn speed (reduced from 100)
+#define SLOW_SPEED     90    // Slow speed for gentle corrections (reduced from 60)
 
-
-
-/*motor control*/
-void go_Back(int R_SPEED=SPEED,int L_SPEED=SPEED)  //Forward
+void  Left(int L_SPEED=SPEED)  //left motor
 {
-  digitalWrite(RightMotorDirPin1, HIGH);
-  digitalWrite(RightMotorDirPin2,LOW);
-  digitalWrite(LeftMotorDirPin1,HIGH);
-  digitalWrite(LeftMotorDirPin2,LOW);
-  analogWrite(speedPinL,L_SPEED);
-  analogWrite(speedPinR,R_SPEED);
+  if (L_SPEED<0){
+    digitalWrite(LeftMotorDirPin1,LOW);
+    digitalWrite(LeftMotorDirPin2,HIGH);
+    analogWrite(speedPinL,-L_SPEED);
+  } else {
+    digitalWrite(LeftMotorDirPin1,HIGH);
+    digitalWrite(LeftMotorDirPin2,LOW);   
+    analogWrite(speedPinL,L_SPEED);
+  }
+  
 }
-void  go_Left(int R_SPEED=SPEED,int L_SPEED=SPEED)  //Turn left
+void Right(int R_SPEED=SPEED)  //right motor
 {
-  digitalWrite(RightMotorDirPin1, HIGH);
-  digitalWrite(RightMotorDirPin2,LOW);
-  digitalWrite(LeftMotorDirPin1,LOW);
-  digitalWrite(LeftMotorDirPin2,HIGH);
-  analogWrite(speedPinL,L_SPEED);
-  analogWrite(speedPinR,R_SPEED);
+    if (R_SPEED<0){
+      digitalWrite(RightMotorDirPin1, LOW);
+      digitalWrite(RightMotorDirPin2,HIGH);
+       analogWrite(speedPinR,-R_SPEED);
+    }
+    else {
+      digitalWrite(RightMotorDirPin1, HIGH);
+      digitalWrite(RightMotorDirPin2, LOW);     
+       analogWrite(speedPinR,R_SPEED);
+    }
+ 
 }
-void go_Right(int R_SPEED=SPEED,int L_SPEED=SPEED)  //Turn right
+void go_Left(int L_SPEED=SPEED,int R_SPEED=SPEED) {
+  Right(L_SPEED);
+  Left(-R_SPEED);
+}
+void go_Right(int L_SPEED=SPEED,int R_SPEED=SPEED)  //Turn right
 {
-  digitalWrite(RightMotorDirPin1, LOW);
-  digitalWrite(RightMotorDirPin2,HIGH);
-  digitalWrite(LeftMotorDirPin1,HIGH);
-  digitalWrite(LeftMotorDirPin2,LOW);
-  analogWrite(speedPinL,L_SPEED);
-  analogWrite(speedPinR,R_SPEED);
+  Right(-L_SPEED);
+  Left(R_SPEED);
 }
 void go_Advance(int R_SPEED=SPEED,int L_SPEED=SPEED)  //Reverse
 {
-  digitalWrite(RightMotorDirPin1, LOW);
-  digitalWrite(RightMotorDirPin2,HIGH);
-  digitalWrite(LeftMotorDirPin1,LOW);
-  digitalWrite(LeftMotorDirPin2,HIGH);
-  analogWrite(speedPinL,L_SPEED);
-  analogWrite(speedPinR,R_SPEED);
+  Right(-R_SPEED);
+  Left(-L_SPEED);
 }
 void stop_Stop()    //Stop
 {
@@ -129,11 +131,11 @@ void lineTracking()
   // Track based on sensor pattern string
   // 0 = Black line detected, 1 = White ground detected
 
-  if (sensors == "11011") {
+  if (sensors == "11011" ||sensors == "10001" ) {
     // Center sensor on black line: Go straight
     go_Advance(TRACK_SPEED, TRACK_SPEED);
   }
-  else if (sensors == "10011") {
+  else if (sensors == "10011"||sensors == "00011" ) {
     // Left and center on black: Line is on left, turn LEFT
     go_Advance(SLOW_SPEED, TRACK_SPEED);
   }
@@ -145,7 +147,7 @@ void lineTracking()
     // Far left sensors on black: Line is far left, sharp LEFT turn
     go_Left(TURN_SPEED, TURN_SPEED);
   }
-  else if (sensors == "11001") {
+  else if (sensors == "11001" ||sensors == "11000" ) {
     // Center and right on black: Line is on right, turn RIGHT
     go_Advance(TRACK_SPEED, SLOW_SPEED);
   }
@@ -163,58 +165,26 @@ void lineTracking()
   }
   else if (sensors == "00000") {
     // All sensors on black: Might be intersection or end, stop
-    stop_Stop();
+     stop_Stop();
   }
   else {
     // Other patterns: Continue forward
-    go_Advance(TRACK_SPEED, TRACK_SPEED);
+    go_Advance(SLOW_SPEED, SLOW_SPEED);
   }
 }
 
 void setup()
 {
   Serial.begin(115200);  // Initialize Serial for debugging
-
-
-  // OPTIONAL: Disable brownout detector for weak 9V battery
-  // WARNING: This is a workaround, not a real fix!
-  // Uncomment the line below if you still experience resets
-  // #include "soc/soc.h"
-  // #include "soc/rtc_cntl_reg.h"
-  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-
 	init_GPIO();
-
- // Serial.println("ESP32 Line Tracking Car Started");
- // Serial.println("Sensor format: [S1][S2][S3][S4][S5]");
- // Serial.println("(Far Left)(Left)(Center)(Right)(Far Right)");
- // Serial.println("0 = Black line, 1 = White ground");
-
-  // Optional: Test motor demo (comment out if not needed)
-   /*
-  go_Advance(100,0);//Forward
-  delay(1000);
-    go_Advance(0,100);//Forward
-      delay(1000);
-  go_Back(100,0);//Reverse
-  delay(1000);
- go_Back(0,100);//Reverse
-  delay(1000);
-    stop_Stop();//Stop
-
-  go_Left(40,200);//Turn left
-  delay(1000);
-  go_Right(200,40);//Turn right
-  delay(1000);
-  stop_Stop();//Stop
-  delay(1000);
-*/
-
+  //  go_Right(TURN_SPEED, TURN_SPEED);
+  //  delay(2000);
+    stop_Stop();
 }
 
 void loop()
 {
   // Continuous line tracking
- lineTracking();
+lineTracking();
   delay(10);  // Small delay for stability
 }
