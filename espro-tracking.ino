@@ -19,12 +19,12 @@
 #define LeftMotorDirPin2  27   //Left Motor direction pin 1 to MODEL-X IN4
 #define SPEED 100
 
-// IR Tracking Sensor Pins (Left to Right)
-#define SENSOR_LEFT_2   33    // Far Left
-#define SENSOR_LEFT_1   35    // Left
-#define SENSOR_CENTER   34    // Center
-#define SENSOR_RIGHT_1  39    // Right
-#define SENSOR_RIGHT_2  36    // Far Right
+// IR Tracking sensors Pins (Left to Right)
+#define sensors_LEFT_2   33    // Far Left
+#define sensors_LEFT_1   35    // Left
+#define sensors_CENTER   34    // Center
+#define sensors_RIGHT_1  39    // Right
+#define sensors_RIGHT_2  36    // Far Right
 
 // Speed settings for tracking
 // Reduced speeds for low-capacity 9V battery to prevent brownout
@@ -94,83 +94,72 @@ void init_GPIO()
   pinMode(LeftMotorDirPin2, OUTPUT);
   pinMode(speedPinR, OUTPUT);
 
-  // Initialize IR sensor pins as INPUT
-  pinMode(SENSOR_LEFT_2, INPUT);
-  pinMode(SENSOR_LEFT_1, INPUT);
-  pinMode(SENSOR_CENTER, INPUT);
-  pinMode(SENSOR_RIGHT_1, INPUT);
-  pinMode(SENSOR_RIGHT_2, INPUT);
+  // Initialize IR sensors pins as INPUT
+  pinMode(sensors_LEFT_2, INPUT);
+  pinMode(sensors_LEFT_1, INPUT);
+  pinMode(sensors_CENTER, INPUT);
+  pinMode(sensors_RIGHT_1, INPUT);
+  pinMode(sensors_RIGHT_2, INPUT);
 
 	stop_Stop();
 }
 
 // Read all 5 IR sensors and return as a string
-String readSensors()
+float readsensors()
 {
-  int s1 = digitalRead(SENSOR_LEFT_2);   // Far Left
-  int s2 = digitalRead(SENSOR_LEFT_1);   // Left
-  int s3 = digitalRead(SENSOR_CENTER);   // Center
-  int s4 = digitalRead(SENSOR_RIGHT_1);  // Right
-  int s5 = digitalRead(SENSOR_RIGHT_2);  // Far Right
-
+  int s1 = !digitalRead(sensors_LEFT_2);   // Far Left
+  int s2 = !digitalRead(sensors_LEFT_1);   // Left
+  int s3 = !digitalRead(sensors_CENTER);   // Center
+  int s4 = !digitalRead(sensors_RIGHT_1);  // Right
+  int s5 = !digitalRead(sensors_RIGHT_2);  // Far Right
+  int count=s1+s2+s3+s4+s5;
+  if (count==0) return 999;
   // Create 5-digit string
-  String sensorString = String(s1) + String(s2) + String(s3) + String(s4) + String(s5);
-
-  // Print sensor values for debugging
-  Serial.print("Sensors: ");
-  Serial.println(sensorString);
-
-  return sensorString;
+  float sensorsvalue = (s1*10.0+s2*5.0-s4*5.0-s5*10.0)/count;
+  return sensorsvalue;
 }
 
 // Line tracking function
 void lineTracking()
 {
-  String sensors = readSensors();
-
-  // Track based on sensor pattern string
+  float sensors = readsensors();
+  Serial.print("sensors: ");
+  Serial.println(sensors);
+  // Track based on sensors pattern string
   // 0 = Black line detected, 1 = White ground detected
-
-  if (sensors == "11011" ||sensors == "10001" ) {
-    // Center sensor on black line: Go straight
-    go_Advance(TRACK_SPEED, TRACK_SPEED);
-  }
-  else if (sensors == "10011"||sensors == "00011" ) {
-    // Left and center on black: Line is on left, turn LEFT
-    go_Advance(SLOW_SPEED, TRACK_SPEED);
-  }
-  else if (sensors == "10111") {
-    // Left sensor on black: Line is more to left, turn LEFT stronger
-    go_Advance(SLOW_SPEED, TURN_SPEED);
-  }
-  else if (sensors == "00111" || sensors == "01111") {
-    // Far left sensors on black: Line is far left, sharp LEFT turn
-    go_Left(TURN_SPEED, TURN_SPEED);
-  }
-  else if (sensors == "11001" ||sensors == "11000" ) {
-    // Center and right on black: Line is on right, turn RIGHT
-    go_Advance(TRACK_SPEED, SLOW_SPEED);
-  }
-  else if (sensors == "11101") {
-    // Right sensor on black: Line is more to right, turn RIGHT stronger
-    go_Advance(TURN_SPEED, SLOW_SPEED);
-  }
-  else if (sensors == "11100" || sensors == "11110") {
-    // Far right sensors on black: Line is far right, sharp RIGHT turn
-    go_Right(TURN_SPEED, TURN_SPEED);
-  }
-  else if (sensors == "11111") {
+ if (sensors >900) {
     // All sensors on white: No line detected, continue forward slowly
     go_Advance(SLOW_SPEED, SLOW_SPEED);
   }
-  else if (sensors == "00000") {
-    // All sensors on black: Might be intersection or end, stop
-     stop_Stop();
+  else if (abs(sensors)<2  ) {
+    // Center sensors on black line: Go straight
+    go_Advance(TRACK_SPEED, TRACK_SPEED);
   }
-  else {
-    // Other patterns: Continue forward
-    go_Advance(SLOW_SPEED, SLOW_SPEED);
+  else if (sensors>=2 && sensors <5 ) {
+    // Left and center on black: Line is on left, turn LEFT
+    go_Advance(SLOW_SPEED, TRACK_SPEED);
   }
+  else if (sensors >=5 && sensors<7.5) {
+    // Left sensors on black: Line is more to left, turn LEFT stronger
+    go_Advance(SLOW_SPEED, TURN_SPEED);
+  }
+  else if (sensors >=7.5) {
+    // Far left sensors on black: Line is far left, sharp LEFT turn
+    go_Left(TURN_SPEED, TURN_SPEED);
+  }
+  else if (sensors<= -2 && sensors>-5) {
+    // Center and right on black: Line is on right, turn RIGHT
+    go_Advance(TRACK_SPEED, SLOW_SPEED);
+  }
+  else if (sensors <=-5 && sensors>-7.5) {
+    // Right sensors on black: Line is more to right, turn RIGHT stronger
+    go_Advance(TURN_SPEED, SLOW_SPEED);
+  }
+  else if (sensors<=-7.5) {
+    // Far right sensors on black: Line is far right, sharp RIGHT turn
+    go_Right(TURN_SPEED, TURN_SPEED);
+  }
+
 }
 
 void setup()
